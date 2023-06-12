@@ -1,0 +1,114 @@
+stages:
+  - Tests
+  - Release
+  - Build Release
+
+variables:
+  project_name: "$CI_PROJECT_NAME"
+  SEMANTIC_RELEASE_PACKAGE: "$CI_PROJECT_NAME"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
+services:
+  - name: ghcr.io/griefed/gitlab-ci-cd:2.2.10
+    alias: docker
+
+workflow:
+  rules:
+    - if: '$CI_MERGE_REQUEST_EVENT_TYPE == "detached"'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_COMMIT_TITLE =~ /^RELEASE:.+$/ && $CI_COMMIT_BRANCH' # && $CI_COMMIT_TAG == null
+      when: never
+    - when: always
+
+Build Test:
+  stage: Tests
+  image: ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
+  before_script:
+    - echo "**** Running in $CI_JOB_ID ****"
+    - echo "**** Java location ****"
+    - which java
+    - echo "**** Java version ****"
+    - java -version
+    - echo "**** Allowing execution of gradlew ****"
+    - chmod +x gradlew
+  script:
+    - echo "**** Building Plugin ****"
+    - "./gradlew build --info --full-stacktrace"
+  retry: 1
+  rules:
+    - if: '$CI_SERVER_HOST == "git.griefed.de"'
+  artifacts:
+    when: always
+    name: "$CI_COMMIT_BRANCH-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
+    expose_as: "Gradle-Test-Artifacts"
+    paths:
+      - build
+    expire_in: 1 week
+  cache:
+    - key:
+        files:
+          - build.gradle.kts
+          - gradle/gradle-wrapper.properties
+      paths:
+        - .gradle
+
+Generate Release:
+  stage: Release
+  image: ghcr.io/griefed/gitlab-ci-cd:2.2.10
+  needs:
+    - job: Build Test
+      artifacts: false
+  script:
+    - npx semantic-release
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "alpha" && $CI_COMMIT_TITLE !~ /^RELEASE:.+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+    - if: '$CI_COMMIT_BRANCH == "beta" && $CI_COMMIT_TITLE !~ /^RELEASE:.+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+    - if: '$CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TITLE !~ /^RELEASE:.+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_TITLE !~ /^RELEASE:.+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+
+Build Release:
+  stage: Build Release
+  image: ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
+  needs:
+    - job: Build Test
+      artifacts: false
+      optional: false
+    - job: release_job
+      optional: true
+      artifacts: false
+  before_script:
+    - echo "**** Running in $CI_JOB_ID ****"
+    - echo "**** Java location ****"
+    - which java
+    - echo "**** Java version ****"
+    - java -version
+    - echo "**** Allowing execution of gradlew ****"
+    - chmod +x gradlew
+  script:
+    - echo "**** Building Plugin ****"
+    - "./gradlew build -Pversion=${CI_COMMIT_TAG} --info --full-stacktrace"
+    - echo "**** Listing build directory ****"
+    - LC_COLLATE=C ls -ahl --group-directories-first --color=auto */build
+    - LC_COLLATE=C ls -ahl --group-directories-first --color=auto */build/*
+    - echo "**** Uploading packages ****"
+    - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file build/libs/spc-nekodetector-plugin-${CI_COMMIT_TAG}.jar "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${CI_COMMIT_TAG}/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.jar"'
+    - echo "**** Create asset links ****"
+    - 'curl --request POST --header "PRIVATE-TOKEN: ${GITLAB_TOKEN}" --data tag_name="${CI_COMMIT_TAG}" --data name="${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.jar" --data url="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${CI_COMMIT_TAG}/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.jar" --data link_type="package" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}/assets/links"'
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+-(alpha|beta)\.\d+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+    - if: '$CI_COMMIT_TAG =~ /^\d+\.\d+\.\d+$/ && $CI_SERVER_HOST == "git.griefed.de"'
+
+release_job:
+  stage: Release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Running the release job to mirror release generation from parent repository."
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: 'Release $CI_COMMIT_TAG'
+    description: '## Changelogs for this release available at:<br><br>1. **[GitHub](https://github.com/Griefed/ServerPackCreator/releases/tag/$CI_COMMIT_TAG)**<br>2. **[GitGriefed](https://git.griefed.de/Griefed/ServerPackCreator/-/releases/$CI_COMMIT_TAG)**<br>3. **[CHANGELOG.md](https://gitlab.com/Griefed/ServerPackCreator/-/blob/$CI_COMMIT_TAG/CHANGELOG.md)**<br>'
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_SERVER_HOST == "gitlab.com"'

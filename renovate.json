@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":enableGradleLite",
+    ":semanticCommitTypeAll(deps)"
+  ],
+  "gradle-lite": {
+    "enabled": true
+  },
+  "labels": ["dependencies"],
+  "assignees": ["Griefed"]
+}
