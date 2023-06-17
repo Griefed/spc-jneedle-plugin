@@ -21,7 +21,7 @@ dependencies {
     annotationProcessor("org.pf4j:pf4j:3.9.0")
     kapt("org.pf4j:pf4j:3.9.0")
     compileOnly("de.griefed.serverpackcreator:serverpackcreator-api-jvm:4.1.5")
-    api("dev.kosmx.needle:jneedle:1.0.0")
+    api("dev.kosmx.needle:jneedle:1.0.1")
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.3")
