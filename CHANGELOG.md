@@ -1,3 +1,15 @@
+## [1.0.1](https://git.griefed.de/Griefed/spc-jneedle-plugin/compare/1.0.0...1.0.1) (2023-06-17)
+
+
+### 📦 Other
+
+* Update README and CHANGELOG ([6e20d53](https://git.griefed.de/Griefed/spc-jneedle-plugin/commit/6e20d53a56b3a701937c377940e6b3ab87029bef))
+
+
+### 🛠 Fixes
+
+* Update jNeedle to [1.0.1](https://github.com/KosmX/jneedle/releases/tag/1.0.1) ([74acc1b](https://git.griefed.de/Griefed/spc-jneedle-plugin/commit/74acc1b8bf9be5534b34f448dd6828fcdea1e4a5))
+
 ## [1.0.0](https://git.griefed.de/Griefed/spc-jneedle-plugin/compare/...1.0.0) (2023-06-12)
 
 
