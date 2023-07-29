@@ -10,7 +10,7 @@ variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
 services:
-  - name: ghcr.io/griefed/gitlab-ci-cd:2.2.10
+  - name: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.10
     alias: docker
 
 workflow:
@@ -25,7 +25,7 @@ workflow:
 
 Build Test:
   stage: Tests
-  image: ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
+  image: docker.griefed.dev/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
   before_script:
     - echo "**** Running in $CI_JOB_ID ****"
     - echo "**** Java location ****"
@@ -57,7 +57,7 @@ Build Test:
 
 Generate Release:
   stage: Release
-  image: ghcr.io/griefed/gitlab-ci-cd:2.2.10
+  image: docker.griefed.dev/griefed/gitlab-ci-cd:2.2.10
   needs:
     - job: Build Test
       artifacts: false
@@ -71,7 +71,7 @@ Generate Release:
 
 Build Release:
   stage: Build Release
-  image: ghcr.io/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
+  image: docker.griefed.dev/griefed/baseimage-ubuntu-jdk17-kotlin:1.0.4
   needs:
     - job: Build Test
       artifacts: false
