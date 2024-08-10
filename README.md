@@ -1,5 +1,8 @@
 # jNeedle Plugin for ServerPackCreator
 
+> [!IMPORTANT]  
+> **As of ServerPackCreator version 6.3.0, jNeedle scans are part of the API and automatically check the mod- and server pack.**
+
 This is a plugin for [ServerPackCreator](https://github.com/Griefed/ServerPackCreator)
 
 **NOTE:** This plugin requires at least [ServerPackCreator version 4.1.5](https://github.com/Griefed/ServerPackCreator/releases/tag/4.1.5) 
